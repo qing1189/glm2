@@ -94,6 +94,7 @@ app.listen(PORT, async () => {
   console.log(`OpenAI format:  POST /v1/chat/completions`);
   console.log(`Models:         GET  /v1/models`);
   console.log(`Admin panel:    http://localhost:${PORT}/admin`);
+  console.log(`Admin password: ${process.env.ADMIN_PASSWORD ? process.env.ADMIN_PASSWORD.slice(0, 2) + '***' : '(default: admin123)'}`);
 
   try {
     loadPersistedConfig();
