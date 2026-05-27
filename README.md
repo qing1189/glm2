@@ -48,12 +48,6 @@ cp .env.docker .env.docker.local
 编辑 `.env.docker` 文件：
 
 ```env
-# Z.ai JWT Token（多个用英文逗号分隔）
-GLM_TOKENS=your_jwt_token_here
-
-# 或者使用账号密码（格式: email:password）
-GLM_ACCOUNTS=your_email:your_password
-
 # API 端口
 PORT=3003
 
@@ -66,6 +60,9 @@ ADMIN_PASSWORD=your_secure_password
 # 代理（可选）
 HTTPS_PROXY=
 ```
+
+> 💡 **Z.ai 的 Token/账号密码统一通过管理面板添加**，无需在配置文件中填写。
+> 启动后访问 `http://localhost:3003/admin` 进行配置。
 
 ```bash
 # 3. 一键启动
@@ -141,8 +138,6 @@ pm2 start "xvfb-run --auto-servernum node glm-index.js" --name glm-2api
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `GLM_TOKENS` | Z.ai JWT Token（逗号分隔） | - |
-| `GLM_ACCOUNTS` | Z.ai 账号密码（email:password，逗号分隔） | - |
 | `PORT` | API 服务端口 | `3003` |
 | `API_KEY` | API 访问密钥（留空不验证） | 空 |
 | `ADMIN_PASSWORD` | 管理面板登录密码 | `admin123` |
@@ -152,6 +147,8 @@ pm2 start "xvfb-run --auto-servernum node glm-index.js" --name glm-2api
 | `HTTPS_PROXY` | HTTPS 代理地址 | 空 |
 | `HTTP_PROXY` | HTTP 代理地址 | 空 |
 | `DEBUG_SSE` | SSE 调试日志（`1` 开启） | `0` |
+
+> 💡 `GLM_TOKENS` 和 `GLM_ACCOUNTS` 通过管理面板 Web 界面添加管理，数据自动持久化。
 
 ## 管理面板
 

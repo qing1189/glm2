@@ -1,16 +1,22 @@
 import { createHmac, randomBytes } from 'crypto';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { join } from 'path';
 import { getPoolInfo, getTotalCapacity, loadAccounts, initAccountPool } from './glm-auth.js';
 import { getQueueInfo } from './src/queue.js';
 
 // ============================================
 // 管理面板后端 API
 // 密码保护 + Token/API Key 管理 + 热加载
+// Token/Account 数据持久化到 JSON 文件（存在 volume 中）
 // ============================================
 
 const SESSION_SECRET = randomBytes(32).toString('hex');
 const SESSION_TTL = 24 * 60 * 60 * 1000; // 24 hours
 const sessions = new Map();
+
+// 数据持久化路径（存在 USER_DATA_DIR 对应的 volume 中）
+const DATA_DIR = process.env.USER_DATA_DIR || './edge-profile';
+const CONFIG_FILE = join(DATA_DIR, 'glm-config.json');
 
 // 获取管理员密码
 function getAdminPassword() {
@@ -39,14 +45,11 @@ function validateSession(token) {
 
 // 认证中间件
 export function adminAuth(req, res, next) {
-  // 当中间件通过 app.use('/admin/api', adminAuth) 挂载时
-  // req.path 是相对于挂载点的路径，即 /login 而非 /admin/api/login
-  // 同时兼容直接挂载到 app 的情况
   const path = req.path;
 
   // 登录接口不需要认证
   if (path === '/login' || path === '/admin/api/login') return next();
-  // 静态页面不需要认证（前端自己处理）
+  // 静态页面不需要认证
   if (path === '/admin' || path === '/admin/') return next();
 
   const token = req.headers['x-admin-token'];
@@ -56,39 +59,45 @@ export function adminAuth(req, res, next) {
   next();
 }
 
-// 读取 .env 文件
-function readEnvFile() {
-  const envPath = process.env.ENV_FILE_PATH || '.env.docker';
-  if (!existsSync(envPath)) {
-    // 尝试 .env
-    if (existsSync('.env')) return { path: '.env', content: readFileSync('.env', 'utf-8') };
-    return { path: envPath, content: '' };
+// ============================================
+// 持久化配置文件（JSON）
+// 存储 Token/Account 数据到 volume 中
+// ============================================
+
+function ensureDataDir() {
+  if (!existsSync(DATA_DIR)) {
+    mkdirSync(DATA_DIR, { recursive: true });
   }
-  return { path: envPath, content: readFileSync(envPath, 'utf-8') };
 }
 
-// 解析 .env 内容
-function parseEnv(content) {
-  const vars = {};
-  for (const line of content.split('\n')) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) continue;
-    const eqIdx = trimmed.indexOf('=');
-    if (eqIdx === -1) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    const value = trimmed.slice(eqIdx + 1).trim();
-    vars[key] = value;
+function readConfig() {
+  ensureDataDir();
+  if (!existsSync(CONFIG_FILE)) {
+    return { tokens: '', accounts: '' };
   }
-  return vars;
+  try {
+    return JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
+  } catch {
+    return { tokens: '', accounts: '' };
+  }
 }
 
-// 序列化 .env 内容
-function serializeEnv(vars) {
-  const lines = [];
-  for (const [key, value] of Object.entries(vars)) {
-    lines.push(`${key}=${value}`);
+function saveConfig(config) {
+  ensureDataDir();
+  writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
+}
+
+// 启动时从持久化文件加载 Token/Account 到环境变量
+export function loadPersistedConfig() {
+  const config = readConfig();
+  if (config.tokens) {
+    process.env.GLM_TOKENS = config.tokens;
+    console.log('[admin] Loaded persisted GLM_TOKENS from config file');
   }
-  return lines.join('\n') + '\n';
+  if (config.accounts) {
+    process.env.GLM_ACCOUNTS = config.accounts;
+    console.log('[admin] Loaded persisted GLM_ACCOUNTS from config file');
+  }
 }
 
 // 热加载配置到进程环境
@@ -158,7 +167,7 @@ export function registerAdminRoutes(app) {
       GLM_TOKENS: process.env.GLM_TOKENS || '',
       GLM_ACCOUNTS: process.env.GLM_ACCOUNTS || '',
       API_KEY: process.env.API_KEY || '',
-      PORT: process.env.PORT || '3001',
+      PORT: process.env.PORT || '3003',
       HTTPS_PROXY: process.env.HTTPS_PROXY || '',
       HTTP_PROXY: process.env.HTTP_PROXY || '',
       DEBUG_SSE: process.env.DEBUG_SSE || '0',
@@ -174,16 +183,15 @@ export function registerAdminRoutes(app) {
       // 更新进程环境变量（热加载）
       hotReloadConfig(newConfig);
 
-      // 写入 .env 文件持久化
-      const { path: envPath } = readEnvFile();
-      const currentVars = parseEnv(readEnvFile().content);
-      const merged = { ...currentVars, ...newConfig };
-      writeFileSync(envPath, serializeEnv(merged), 'utf-8');
+      // 持久化 Token/Account 到 JSON 文件（存在 volume 中，重启不丢失）
+      const config = readConfig();
+      if (newConfig.GLM_TOKENS !== undefined) config.tokens = newConfig.GLM_TOKENS;
+      if (newConfig.GLM_ACCOUNTS !== undefined) config.accounts = newConfig.GLM_ACCOUNTS;
+      saveConfig(config);
 
       // 如果 Token 或 Account 变化了，重新初始化连接池
       if (newConfig.GLM_TOKENS !== undefined || newConfig.GLM_ACCOUNTS !== undefined) {
         try {
-          // 清空现有池子后重新加载
           loadAccounts();
           await initAccountPool();
           res.json({ success: true, message: '配置已更新并重新加载 Token 池' });
@@ -211,13 +219,12 @@ export function registerAdminRoutes(app) {
     tokens.push(token.trim());
     process.env.GLM_TOKENS = tokens.join(',');
 
-    // 持久化
-    const { path: envPath, content } = readEnvFile();
-    const vars = parseEnv(content);
-    vars.GLM_TOKENS = process.env.GLM_TOKENS;
-    writeFileSync(envPath, serializeEnv(vars), 'utf-8');
+    // 持久化到 JSON
+    const config = readConfig();
+    config.tokens = process.env.GLM_TOKENS;
+    saveConfig(config);
 
-    res.json({ success: true, message: 'Token 已添加，请手动点击重载 Token 池' });
+    res.json({ success: true, message: 'Token 已添加，请点击重载 Token 池生效' });
   });
 
   // 删除 Token
@@ -235,13 +242,12 @@ export function registerAdminRoutes(app) {
     
     process.env.GLM_TOKENS = filtered.join(',');
 
-    // 持久化
-    const { path: envPath, content } = readEnvFile();
-    const vars = parseEnv(content);
-    vars.GLM_TOKENS = process.env.GLM_TOKENS;
-    writeFileSync(envPath, serializeEnv(vars), 'utf-8');
+    // 持久化到 JSON
+    const config = readConfig();
+    config.tokens = process.env.GLM_TOKENS;
+    saveConfig(config);
 
-    res.json({ success: true, message: 'Token 已删除，请手动点击重载 Token 池' });
+    res.json({ success: true, message: 'Token 已删除，请点击重载 Token 池生效' });
   });
 
   // 重载 Token 池

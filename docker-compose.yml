@@ -10,10 +10,9 @@ services:
     # Chrome 需要较大的共享内存
     shm_size: '1gb'
     environment:
-      - GLM_TOKENS=${GLM_TOKENS:-}
-      - GLM_ACCOUNTS=${GLM_ACCOUNTS:-}
       - PORT=${PORT:-3003}
       - API_KEY=${API_KEY:-}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
       - CHROME_PATH=/usr/bin/google-chrome-stable
       - USER_DATA_DIR=/app/edge-profile
       - GLM_SERVER_MODE=1
@@ -21,7 +20,7 @@ services:
       - HTTP_PROXY=${HTTP_PROXY:-}
       - DEBUG_SSE=${DEBUG_SSE:-0}
     volumes:
-      # 持久化 Chrome 用户数据（登录状态、cookies 等）
+      # 持久化 Chrome 用户数据 + Token 配置（登录状态、cookies、面板配置等）
       - chrome-data:/app/edge-profile
     env_file:
       - .env.docker

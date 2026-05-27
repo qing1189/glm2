@@ -8,7 +8,7 @@ import { loadAccounts, initAccountPool, getPoolInfo, getTotalCapacity, acquireTo
 import { handleOpenAICompletion, convertAnthropicToOpenAI } from './glm-openai.js';
 import { getModels, handleOpenAIModels } from './glm-models.js';
 import { getQueueInfo } from './src/queue.js';
-import { adminAuth, registerAdminRoutes } from './admin-api.js';
+import { adminAuth, registerAdminRoutes, loadPersistedConfig } from './admin-api.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -96,6 +96,7 @@ app.listen(PORT, async () => {
   console.log(`Admin panel:    http://localhost:${PORT}/admin`);
 
   try {
+    loadPersistedConfig();
     loadAccounts();
     await initAccountPool();
   } catch (err) {
