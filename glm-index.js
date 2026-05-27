@@ -23,6 +23,20 @@ const PORT = process.env.PORT || 3001;
 
 app.use(express.json({ limit: '50mb' }));
 
+// 请求日志中间件
+app.use((req, res, next) => {
+  const start = Date.now();
+  const { method, url } = req;
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    const status = res.statusCode;
+    // 跳过静态资源和健康检查的详细日志
+    if (url.startsWith('/admin/') && !url.startsWith('/admin/api')) return;
+    console.log(`[${new Date().toISOString()}] ${method} ${url} ${status} ${duration}ms`);
+  });
+  next();
+});
+
 // 管理面板静态文件
 app.use('/admin', express.static(join(__dirname, 'public')));
 app.get('/admin', (req, res) => res.sendFile(join(__dirname, 'public', 'admin.html')));
@@ -81,6 +95,11 @@ app.listen(PORT, async () => {
   console.log(`Models:         GET  /v1/models`);
   console.log(`Admin panel:    http://localhost:${PORT}/admin`);
 
-  loadAccounts();
-  await initAccountPool();
+  try {
+    loadAccounts();
+    await initAccountPool();
+  } catch (err) {
+    console.warn(`[startup] Token pool init warning: ${err.message}`);
+    console.warn('[startup] Service is running — configure tokens via admin panel: /admin');
+  }
 });

@@ -51,7 +51,7 @@ export function loadAccounts() {
   }
 
   if (accountPool.length === 0) {
-    throw new Error('No GLM_ACCOUNTS or GLM_TOKENS configured');
+    console.warn('[glm-auth] No GLM_ACCOUNTS or GLM_TOKENS configured — please add via admin panel or .env file');
   }
 
   return accountPool;
