@@ -18,6 +18,8 @@ services:
     volumes:
       # 持久化 Chrome 用户数据 + Token 配置（登录状态、cookies、面板配置等）
       - chrome-data:/app/edge-profile
+      # 挂载环境变量文件，确保 dotenv 能读取
+      - ./.env.docker:/app/.env.docker:ro
     logging:
       driver: json-file
       options:

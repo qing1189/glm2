@@ -1,5 +1,12 @@
 import { config } from 'dotenv';
-config();
+import { existsSync } from 'fs';
+
+// 优先加载 .env.docker，其次 .env
+if (existsSync('.env.docker')) {
+  config({ path: '.env.docker' });
+} else {
+  config();
+}
 
 import express from 'express';
 import { fileURLToPath } from 'url';

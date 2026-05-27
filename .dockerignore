@@ -1,0 +1,8 @@
+node_modules/
+edge-profile/
+.env
+.env.docker
+.env.docker.local
+.git/
+.gitignore
+README.md
