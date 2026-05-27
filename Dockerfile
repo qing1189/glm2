@@ -18,8 +18,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # 安装系统依赖 + Google Chrome + Xvfb
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Xvfb 虚拟显示
+    # Xvfb 虚拟显示 + xauth
     xvfb \
+    xauth \
     # Chrome 依赖
     wget \
     gnupg2 \
