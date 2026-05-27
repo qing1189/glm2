@@ -1,0 +1,6 @@
+node_modules/
+edge-profile/
+.env
+deploy.py
+deploy-log.txt
+debug-browser.mjs
