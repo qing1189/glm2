@@ -39,10 +39,15 @@ function validateSession(token) {
 
 // 认证中间件
 export function adminAuth(req, res, next) {
+  // 当中间件通过 app.use('/admin/api', adminAuth) 挂载时
+  // req.path 是相对于挂载点的路径，即 /login 而非 /admin/api/login
+  // 同时兼容直接挂载到 app 的情况
+  const path = req.path;
+
   // 登录接口不需要认证
-  if (req.path === '/admin/api/login') return next();
+  if (path === '/login' || path === '/admin/api/login') return next();
   // 静态页面不需要认证（前端自己处理）
-  if (req.path === '/admin' || req.path === '/admin/') return next();
+  if (path === '/admin' || path === '/admin/') return next();
 
   const token = req.headers['x-admin-token'];
   if (!validateSession(token)) {
