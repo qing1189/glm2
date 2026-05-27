@@ -21,6 +21,9 @@ function isTokenExpired(token) {
 const accountPool = [];
 
 export function loadAccounts() {
+  // 清空现有池子，重新加载
+  accountPool.length = 0;
+
   const accountsStr = process.env.GLM_ACCOUNTS?.trim();
   const tokensStr = process.env.GLM_TOKENS?.trim();
 
