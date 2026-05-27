@@ -1,4 +1,4 @@
-# glm-2api
+# glm
 
 OpenAI-compatible API proxy for [Z.ai](https://chat.z.ai) (Zhipu GLM models).
 
