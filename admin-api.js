@@ -73,12 +73,12 @@ function ensureDataDir() {
 function readConfig() {
   ensureDataDir();
   if (!existsSync(CONFIG_FILE)) {
-    return { tokens: '', accounts: '' };
+    return { tokens: '', accounts: '', apiKey: '' };
   }
   try {
     return JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
   } catch {
-    return { tokens: '', accounts: '' };
+    return { tokens: '', accounts: '', apiKey: '' };
   }
 }
 
@@ -87,7 +87,7 @@ function saveConfig(config) {
   writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
 }
 
-// 启动时从持久化文件加载 Token/Account 到环境变量
+// 启动时从持久化文件加载 Token/Account/API_KEY 到环境变量
 export function loadPersistedConfig() {
   const config = readConfig();
   if (config.tokens) {
@@ -97,6 +97,10 @@ export function loadPersistedConfig() {
   if (config.accounts) {
     process.env.GLM_ACCOUNTS = config.accounts;
     console.log('[admin] Loaded persisted GLM_ACCOUNTS from config file');
+  }
+  if (config.apiKey) {
+    process.env.API_KEY = config.apiKey;
+    console.log('[admin] Loaded persisted API_KEY from config file');
   }
 }
 
@@ -183,10 +187,11 @@ export function registerAdminRoutes(app) {
       // 更新进程环境变量（热加载）
       hotReloadConfig(newConfig);
 
-      // 持久化 Token/Account 到 JSON 文件（存在 volume 中，重启不丢失）
+      // 持久化 Token/Account/API_KEY 到 JSON 文件（存在 volume 中，重启不丢失）
       const config = readConfig();
       if (newConfig.GLM_TOKENS !== undefined) config.tokens = newConfig.GLM_TOKENS;
       if (newConfig.GLM_ACCOUNTS !== undefined) config.accounts = newConfig.GLM_ACCOUNTS;
+      if (newConfig.API_KEY !== undefined) config.apiKey = newConfig.API_KEY;
       saveConfig(config);
 
       // 如果 Token 或 Account 变化了，重新初始化连接池

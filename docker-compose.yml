@@ -11,7 +11,6 @@ services:
     shm_size: '1gb'
     environment:
       - PORT=${PORT:-3003}
-      - API_KEY=${API_KEY:-}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin123}
       - CHROME_PATH=/usr/bin/google-chrome-stable
       - USER_DATA_DIR=/app/edge-profile
