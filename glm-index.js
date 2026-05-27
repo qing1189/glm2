@@ -2,10 +2,16 @@ import { config } from 'dotenv';
 config();
 
 import express from 'express';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { loadAccounts, initAccountPool, getPoolInfo, getTotalCapacity, acquireToken } from './glm-auth.js';
 import { handleOpenAICompletion, convertAnthropicToOpenAI } from './glm-openai.js';
 import { getModels, handleOpenAIModels } from './glm-models.js';
 import { getQueueInfo } from './src/queue.js';
+import { adminAuth, registerAdminRoutes } from './admin-api.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Prevent unhandled promise rejections from crashing the process
 process.on('unhandledRejection', (reason) => {
@@ -17,8 +23,18 @@ const PORT = process.env.PORT || 3001;
 
 app.use(express.json({ limit: '50mb' }));
 
-// API Key auth middleware
+// 管理面板静态文件
+app.use('/admin', express.static(join(__dirname, 'public')));
+app.get('/admin', (req, res) => res.sendFile(join(__dirname, 'public', 'admin.html')));
+
+// 管理面板 API（密码保护）
+app.use('/admin/api', adminAuth);
+registerAdminRoutes(app);
+
+// API Key auth middleware（不影响管理面板路由）
 app.use((req, res, next) => {
+  // 管理面板路由跳过 API Key 验证
+  if (req.path.startsWith('/admin')) return next();
   const apiKey = process.env.API_KEY;
   if (!apiKey) return next();
   const auth = req.headers['authorization'];
@@ -63,6 +79,7 @@ app.listen(PORT, async () => {
   console.log(`GLM 2API running on http://localhost:${PORT}`);
   console.log(`OpenAI format:  POST /v1/chat/completions`);
   console.log(`Models:         GET  /v1/models`);
+  console.log(`Admin panel:    http://localhost:${PORT}/admin`);
 
   loadAccounts();
   await initAccountPool();

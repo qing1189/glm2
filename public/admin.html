@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GLM-2API 管理面板</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-secondary: #64748b;
+      --radius: 8px;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Login Page */
+    .login-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .login-box {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+    }
+    .login-box h1 {
+      text-align: center;
+      margin-bottom: 8px;
+      font-size: 24px;
+    }
+    .login-box p {
+      text-align: center;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    /* Dashboard */
+    .dashboard { display: none; }
+    .dashboard.active { display: block; }
+    .login-container.hidden { display: none; }
+
+    .header {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 { font-size: 20px; }
+    .header-actions { display: flex; gap: 12px; align-items: center; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      border: 1px solid var(--border);
+    }
+    .stat-card .label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .stat-card .value.green { color: var(--success); }
+    .stat-card .value.yellow { color: var(--warning); }
+    .stat-card .value.red { color: var(--danger); }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+    }
+    .tab {
+      padding: 12px 24px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card h3 {
+      margin-bottom: 16px;
+      font-size: 16px;
+    }
+
+    /* Forms */
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text-secondary);
+    }
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    .form-group textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+    .form-group .hint {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+    .btn-danger:hover { background: var(--danger-hover); }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .btn-outline:hover { background: var(--bg); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Token Pool Table */
+    .table-wrap { overflow-x: auto; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .badge-green { background: #d1fae5; color: #065f46; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+    .badge-yellow { background: #fef3c7; color: #92400e; }
+
+    /* Token input area */
+    .token-input-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .token-input-row input { flex: 1; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--text);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 9999;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      max-width: 400px;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: var(--danger); }
+    .toast.success { background: var(--success); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .container { padding: 16px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .header { padding: 12px 16px; }
+      .login-box { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Login Page -->
+<div class="login-container" id="loginPage">
+  <div class="login-box">
+    <h1>🔐 GLM-2API</h1>
+    <p>管理面板登录</p>
+    <div class="form-group">
+      <label>管理密码</label>
+      <input type="password" id="loginPassword" placeholder="请输入管理密码" onkeypress="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="doLogin()">登 录</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div class="dashboard" id="dashboard">
+  <div class="header">
+    <h1>GLM-2API 管理面板</h1>
+    <div class="header-actions">
+      <button class="btn btn-outline btn-sm" onclick="refreshStatus()">🔄 刷新</button>
+      <button class="btn btn-outline btn-sm" onclick="doLogout()">退出</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Status Cards -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card">
+        <div class="label">运行时间</div>
+        <div class="value" id="statUptime">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Token 池容量</div>
+        <div class="value green" id="statCapacity">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">队列中请求</div>
+        <div class="value yellow" id="statQueue">-</div>
+      </div>
+      <div class="stat-card">
+        <div class="label">内存使用</div>
+        <div class="value" id="statMemory">-</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="pool">Token 池状态</div>
+      <div class="tab" data-tab="config">配置管理</div>
+      <div class="tab" data-tab="tokens">Token 管理</div>
+    </div>
+
+    <!-- Tab: Token Pool -->
+    <div class="tab-content active" id="tab-pool">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="margin:0">Token 池详情</h3>
+          <button class="btn btn-primary btn-sm" onclick="reloadPool()">🔄 重载池</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>账号</th>
+                <th>Token 状态</th>
+                <th>过期时间</th>
+                <th>错误次数</th>
+                <th>活跃请求</th>
+                <th>状态</th>
+              </tr>
+            </thead>
+            <tbody id="poolTable">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-secondary)">加载中...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Config -->
+    <div class="tab-content" id="tab-config">
+      <div class="card">
+        <h3>服务配置（修改后热加载生效）</h3>
+        <div class="form-group">
+          <label>GLM_TOKENS</label>
+          <textarea id="cfgTokens" placeholder="JWT Token，多个用英文逗号分隔"></textarea>
+          <div class="hint">Z.ai 的 JWT Token，多个用逗号分隔</div>
+        </div>
+        <div class="form-group">
+          <label>GLM_ACCOUNTS</label>
+          <textarea id="cfgAccounts" placeholder="email:password，多个用英文逗号分隔"></textarea>
+          <div class="hint">格式: email:password，多个用逗号分隔</div>
+        </div>
+        <div class="form-group">
+          <label>API_KEY</label>
+          <input type="text" id="cfgApiKey" placeholder="API 访问密钥（留空不验证）">
+        </div>
+        <div class="form-group">
+          <label>PORT</label>
+          <input type="text" id="cfgPort" placeholder="3003">
+          <div class="hint">修改端口需要重启容器才能生效</div>
+        </div>
+        <div class="form-group">
+          <label>HTTPS_PROXY</label>
+          <input type="text" id="cfgProxy" placeholder="http://host:port（留空直连）">
+        </div>
+        <div class="form-group">
+          <label>ADMIN_PASSWORD</label>
+          <input type="password" id="cfgAdminPwd" placeholder="管理面板密码">
+          <div class="hint">修改后下次登录使用新密码</div>
+        </div>
+        <div class="form-group">
+          <label>DEBUG_SSE</label>
+          <input type="text" id="cfgDebug" placeholder="0 或 1">
+        </div>
+        <button class="btn btn-primary" onclick="saveConfig()">💾 保存并热加载</button>
+      </div>
+    </div>
+
+    <!-- Tab: Token Management -->
+    <div class="tab-content" id="tab-tokens">
+      <div class="card">
+        <h3>快速添加 Token</h3>
+        <div class="token-input-row">
+          <input type="text" id="newTokenInput" placeholder="粘贴 JWT Token...">
+          <button class="btn btn-primary" onclick="addToken()">添加</button>
+        </div>
+        <h3>当前 Token 列表</h3>
+        <div id="tokenList" style="margin-top:12px">
+          <p style="color:var(--text-secondary);font-size:13px">加载中...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API_BASE = '/admin/api';
+let adminToken = localStorage.getItem('glm_admin_token') || '';
+
+// ============ Utils ============
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(API_BASE + path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Token': adminToken,
+      ...(options.headers || {}),
+    },
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    if (res.status === 401 && path !== '/login') {
+      showLogin();
+      throw new Error('会话已过期');
+    }
+    throw new Error(data.error || `HTTP ${res.status}`);
+  }
+  return data;
+}
+
+function formatUptime(seconds) {
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0) return `${d}天${h}时`;
+  if (h > 0) return `${h}时${m}分`;
+  return `${m}分`;
+}
+
+function formatBytes(bytes) {
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+function maskToken(token) {
+  if (!token || token.length < 20) return token || '-';
+  return token.slice(0, 10) + '...' + token.slice(-6);
+}
+
+// ============ Auth ============
+function showLogin() {
+  document.getElementById('loginPage').classList.remove('hidden');
+  document.getElementById('dashboard').classList.remove('active');
+  adminToken = '';
+  localStorage.removeItem('glm_admin_token');
+}
+
+function showDashboard() {
+  document.getElementById('loginPage').classList.add('hidden');
+  document.getElementById('dashboard').classList.add('active');
+  refreshStatus();
+}
+
+async function doLogin() {
+  const pwd = document.getElementById('loginPassword').value;
+  if (!pwd) return showToast('请输入密码', 'error');
+  try {
+    const data = await api('/login', { method: 'POST', body: JSON.stringify({ password: pwd }) });
+    adminToken = data.token;
+    localStorage.setItem('glm_admin_token', adminToken);
+    showDashboard();
+    showToast('登录成功', 'success');
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function doLogout() {
+  try { await api('/logout', { method: 'POST' }); } catch {}
+  showLogin();
+}
+
+// ============ Status ============
+async function refreshStatus() {
+  try {
+    const data = await api('/status');
+    document.getElementById('statUptime').textContent = formatUptime(data.uptime);
+    document.getElementById('statCapacity').textContent = data.totalCapacity;
+    document.getElementById('statQueue').textContent = data.queue.queued + '/' + data.queue.maxQueueSize;
+    document.getElementById('statMemory').textContent = formatBytes(data.memory.rss);
+
+    // Pool table
+    const tbody = document.getElementById('poolTable');
+    if (data.pool.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary)">无 Token</td></tr>';
+    } else {
+      tbody.innerHTML = data.pool.map(t => `
+        <tr>
+          <td>${t.email}</td>
+          <td>${t.hasToken ? '<span class="badge badge-green">有效</span>' : '<span class="badge badge-red">无</span>'}</td>
+          <td>${t.expiresAt ? new Date(t.expiresAt).toLocaleString('zh-CN') : '-'}</td>
+          <td>${t.errorCount}</td>
+          <td>${t.activeRequests}/${t.maxConcurrent}</td>
+          <td>${t.dead ? '<span class="badge badge-red">停用</span>' : t.captchaBlocked ? '<span class="badge badge-yellow">验证码</span>' : '<span class="badge badge-green">正常</span>'}</td>
+        </tr>
+      `).join('');
+    }
+
+    loadTokenList();
+  } catch (e) {
+    showToast('加载状态失败: ' + e.message, 'error');
+  }
+}
+
+// ============ Config ============
+async function loadConfig() {
+  try {
+    const data = await api('/config');
+    document.getElementById('cfgTokens').value = data.GLM_TOKENS || '';
+    document.getElementById('cfgAccounts').value = data.GLM_ACCOUNTS || '';
+    document.getElementById('cfgApiKey').value = data.API_KEY || '';
+    document.getElementById('cfgPort').value = data.PORT || '';
+    document.getElementById('cfgProxy').value = data.HTTPS_PROXY || '';
+    document.getElementById('cfgAdminPwd').value = data.ADMIN_PASSWORD || '';
+    document.getElementById('cfgDebug').value = data.DEBUG_SSE || '0';
+  } catch (e) {
+    showToast('加载配置失败: ' + e.message, 'error');
+  }
+}
+
+async function saveConfig() {
+  try {
+    const config = {
+      GLM_TOKENS: document.getElementById('cfgTokens').value.trim(),
+      GLM_ACCOUNTS: document.getElementById('cfgAccounts').value.trim(),
+      API_KEY: document.getElementById('cfgApiKey').value.trim(),
+      PORT: document.getElementById('cfgPort').value.trim(),
+      HTTPS_PROXY: document.getElementById('cfgProxy').value.trim(),
+      HTTP_PROXY: document.getElementById('cfgProxy').value.trim(),
+      ADMIN_PASSWORD: document.getElementById('cfgAdminPwd').value.trim(),
+      DEBUG_SSE: document.getElementById('cfgDebug').value.trim(),
+    };
+    const data = await api('/config', { method: 'POST', body: JSON.stringify(config) });
+    showToast(data.message, 'success');
+    refreshStatus();
+  } catch (e) {
+    showToast('保存失败: ' + e.message, 'error');
+  }
+}
+
+// ============ Token Management ============
+function loadTokenList() {
+  const tokensStr = document.getElementById('cfgTokens')?.value || '';
+  const container = document.getElementById('tokenList');
+  const tokens = tokensStr.split(',').map(t => t.trim()).filter(Boolean);
+
+  if (tokens.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-secondary);font-size:13px">暂无 Token</p>';
+    return;
+  }
+
+  container.innerHTML = tokens.map((t, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg);border-radius:6px;margin-bottom:6px;">
+      <code style="flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${maskToken(t)}</code>
+      <button class="btn btn-danger btn-sm" onclick="removeToken('${t.replace(/'/g, "\\'")}')">删除</button>
+    </div>
+  `).join('');
+}
+
+async function addToken() {
+  const input = document.getElementById('newTokenInput');
+  const token = input.value.trim();
+  if (!token) return showToast('请输入 Token', 'error');
+  try {
+    const data = await api('/tokens/add', { method: 'POST', body: JSON.stringify({ token }) });
+    showToast(data.message, 'success');
+    input.value = '';
+    await loadConfig();
+    loadTokenList();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function removeToken(token) {
+  if (!confirm('确定要删除这个 Token 吗？')) return;
+  try {
+    const data = await api('/tokens/remove', { method: 'POST', body: JSON.stringify({ token }) });
+    showToast(data.message, 'success');
+    await loadConfig();
+    loadTokenList();
+  } catch (e) {
+    showToast(e.message, 'error');
+  }
+}
+
+async function reloadPool() {
+  try {
+    const data = await api('/reload', { method: 'POST' });
+    showToast(data.message, 'success');
+    refreshStatus();
+  } catch (e) {
+    showToast('重载失败: ' + e.message, 'error');
+  }
+}
+
+// ============ Tabs ============
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'config') loadConfig();
+    if (tab.dataset.tab === 'tokens') { loadConfig().then(() => loadTokenList()); }
+  });
+});
+
+// ============ Init ============
+(async function init() {
+  if (adminToken) {
+    try {
+      await api('/session');
+      showDashboard();
+    } catch {
+      showLogin();
+    }
+  }
+})();
+
+// Auto refresh every 30s
+setInterval(() => {
+  if (document.getElementById('dashboard').classList.contains('active')) {
+    refreshStatus();
+  }
+}, 30000);
+</script>
+</body>
+</html>
